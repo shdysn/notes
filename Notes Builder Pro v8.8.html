@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Universal Notes Builder Pro</title>
+<style>
+:root{
+  --bg:#f2f2f7;--panel:#fff;--soft:#fafafc;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;
+  --primary:#007aff;--page-w:210mm;--page-h:297mm;--page-border:none;--radius:14px;
+  --shadow:0 8px 28px rgba(0,0,0,.10)
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Jameel Noori Nastaleeq",Arial,sans-serif}
+body{display:flex}
+button,input,textarea,select{font:inherit}
+button{touch-action:manipulation}
+.hidden{display:none!important}
+#boot{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .25s}
+.spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+#mobile-tabs{display:none;height:54px;padding:8px 16px;gap:8px;background:rgba(255,255,255,.88);border-bottom:.5px solid var(--border)}
+.tab{flex:1;border:0;padding:7px;border-radius:9px;background:#e3e3e8;color:var(--muted);font-weight:700}.tab.active{background:#fff;color:var(--text);box-shadow:0 2px 8px #0002}
+#editor{width:440px;min-width:340px;height:100%;display:flex;flex-direction:column;border-left:.5px solid var(--border)}
+.app-header,.preview-header{height:56px;flex:none;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.86);backdrop-filter:blur(18px);border-bottom:.5px solid var(--border);font-weight:700}
+#form{padding:16px;overflow:auto;flex:1}
+.card{background:var(--panel);border:.5px solid var(--border);border-radius:var(--radius);padding:17px;margin-bottom:15px;box-shadow:0 2px 8px #0000000a}
+.card h4{margin:0 0 13px;color:var(--primary);font-size:14px}
+label{display:block;margin:10px 0 5px;color:var(--muted);font-size:12px;font-weight:700}
+input[type=text],textarea,select{width:100%;padding:10px 12px;border:.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text);outline:0;direction:rtl}
+textarea{min-height:82px;resize:vertical}.q-input{min-height:46px}input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 18%,transparent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2keep{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ch-row{display:flex;gap:6px;align-items:center;margin-top:8px}
+.ch-row select{flex:1.2;min-width:0;width:auto}
+.ch-row input[type=text]{flex:1;min-width:0;width:auto}
+.ch-row .btn{flex:0 0 auto;padding:8px 10px}.row{display:flex;align-items:center;gap:7px}.row>*{min-width:0}.wrap{flex-wrap:wrap}.grow{flex:1}
+.btn{border:0;border-radius:10px;padding:9px 13px;cursor:pointer;font-weight:700}.btn:active{transform:scale(.97)}.blue{background:var(--primary);color:#fff}.green{background:#34c759;color:#fff}.red{background:#ff3b30;color:#fff}.gray{background:#f2f2f7;color:#242426}.full{width:100%}
+.category{background:var(--soft);border:.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}.cat-head{display:flex;justify-content:space-between;cursor:pointer;font-weight:700}.question{background:#fff;border:.5px solid var(--border);border-radius:10px;padding:12px;margin-top:10px}
+.q-head{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}
+.q-toggle{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:13.5px}
+.actions{display:flex;justify-content:flex-end;gap:5px;margin-bottom:7px}.mini{padding:6px 9px;font-size:12px}
+.chapter-check{display:flex;align-items:center;gap:7px;padding:8px;border-radius:9px;background:var(--soft);margin:5px 0;color:var(--text);font-size:13px}
+#preview{position:relative;display:flex;flex:1;min-width:0;height:100%;flex-direction:column;background:#eef0f5;overflow:hidden}.preview-actions{display:flex;gap:7px}
+#preview-scroll{flex:1;overflow:auto;padding:24px 0 70px;display:flex;justify-content:center;align-items:flex-start}
+#preview-wrapper{width:var(--page-w);display:flex;flex-direction:column;gap:20px;transform-origin:top center}
+#measure-root{position:fixed;left:-100000px;top:0;visibility:hidden;pointer-events:none}
+.page{width:var(--page-w);height:var(--page-h);padding:calc(12mm * var(--margin,1)) calc(10mm * var(--margin,1));padding-bottom:calc(28mm * var(--margin,1));background:#fff;color:#000;position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);font-family:"Jameel Noori Nastaleeq",Arial,sans-serif;direction:rtl}
+.page:after{content:"";position:absolute;inset:5mm;border:var(--page-border);border-radius:4px;pointer-events:none}.running{display:flex;justify-content:space-between;border-bottom:1.5px solid #d1d1d6;padding-bottom:3px;margin-bottom:11px;color:#555;flex:none}.running b{color:var(--primary)}
+.columns{column-count:var(--cols,2);column-gap:8mm;column-rule:.5px solid #d1d1d6;column-fill:auto;flex:1;min-height:0;overflow:hidden;overflow-wrap:anywhere}.columns mjx-container{font-size:calc(100% * var(--math-scale,.85))!important}
+.chapter-title{text-align:center;border-bottom:2px solid var(--primary);margin:10px 0 5px;break-after:avoid}.chapter-title h1{font-size:calc(22px * var(--scale,1));line-height:1.15;color:var(--primary);margin:0}.category-title{background:var(--primary);color:#fff;border-radius:6px;text-align:center;padding:3px 9px;margin:calc(8px * var(--lh,1)) 0 calc(4px * var(--lh,1));font-size:calc(17px * var(--scale,1));font-weight:700;break-after:avoid}
+.keep-group{break-inside:avoid}.qline{margin-top:calc(5px * var(--lh,1));font-size:calc(var(--q-size,18px) * var(--scale,1));line-height:calc(1.3 * var(--lh,1));font-weight:var(--q-weight,700);break-after:avoid;padding-inline-start:calc(27px * var(--scale,1));text-indent:calc(-27px * var(--scale,1))}.serial{display:inline-block;vertical-align:middle;width:calc(21px * var(--scale,1));height:calc(21px * var(--scale,1));min-width:calc(21px * var(--scale,1));min-height:calc(21px * var(--scale,1));margin:0 0 0 6px;padding:0;border:0;border-radius:50%;box-sizing:border-box;background:var(--primary);color:#fff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:calc(11.5px * var(--scale,1));font-weight:700;font-style:normal;line-height:calc(21px * var(--scale,1));letter-spacing:0;text-align:center;white-space:nowrap;overflow:visible;text-indent:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.answer{font-size:calc(16px * var(--scale,1));line-height:calc(1.3 * var(--lh,1));margin:calc(2px * var(--lh,1)) 28px calc(4px * var(--lh,1)) 0;text-align:justify;white-space:pre-wrap}.q-image-wrap{margin:0 28px 8px 0;break-inside:avoid}.q-image{display:block;max-width:100%;max-height:85mm;border:.5px solid #d1d1d6;border-radius:6px}.answer.cont{margin-top:0}.qline,.answer,.category-title{overflow-wrap:anywhere}.compact .qline{margin-top:3px}.compact .answer{margin-bottom:3px}
+.watermark-text{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:80px;font-weight:700;opacity:.04;white-space:nowrap}.watermark-img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60%;max-height:60%;object-fit:contain;opacity:.08}.footer{position:absolute;bottom:8mm;left:10mm;right:10mm;border-top:.5px dashed #8e8e93;padding-top:5px;display:flex;justify-content:space-between}.page-number{background:var(--primary);color:#fff;border-radius:12px;padding:2px 10px;font:600 12px/-apple-system,sans-serif}
+.cover{padding:0!important;align-items:center;justify-content:center;text-align:center}.cover-border{position:absolute;inset:15mm;border:3px double var(--primary);border-radius:12px}.cover-content{z-index:1;width:80%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}.academy{font-size:42px;font-weight:700;color:var(--primary);margin-bottom:20px}.cover-title{font-size:56px;font-weight:700;line-height:1.2}.subtitle{font-size:26px;color:#3a3a3c;background:#f2f2f7;border:.5px solid #ddd;border-radius:25px;padding:6px 24px;margin-top:12px}.cover-bottom{margin-top:auto;margin-bottom:50px;width:80%;padding-top:18px;border-top:1.5px dashed var(--primary);font-size:22px}.session{color:var(--primary);font-family:-apple-system,sans-serif}
+.worksheet .answer,.worksheet .q-image-wrap{display:none!important}.worksheet .qline{padding-bottom:38px;border-bottom:1px dotted #8e8e93;margin-bottom:14px}
+#toolbar{position:absolute;z-index:50;top:68px;left:50%;transform:translate(-50%,-140px);opacity:0;pointer-events:none;max-width:94%;padding:12px;background:rgba(255,255,255,.94);border:.5px solid #0002;border-radius:18px;box-shadow:var(--shadow);transition:.3s}#toolbar.active{transform:translate(-50%,0);opacity:1;pointer-events:auto}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:8px}.step{display:flex;direction:ltr;align-items:center;background:#f2f2f7;border-radius:9px;overflow:hidden}.step button{border:0;background:transparent;color:var(--primary);padding:7px 12px;font-weight:800}.step span{min-width:52px;text-align:center;font:700 13px/-apple-system,sans-serif}
+#busy{display:none;position:absolute;z-index:70;left:50%;top:50%;transform:translate(-50%,-50%);padding:20px 28px;background:#fffe;border-radius:16px;box-shadow:var(--shadow);text-align:center}
+body.dark{--bg:#000;--panel:#1c1c1e;--soft:#2c2c2e;--border:#38383a;--text:#f2f2f7;--muted:#98989f}body.dark #editor{background:#000}body.dark .app-header,body.dark .preview-header{background:#1c1c1edd}body.dark #preview{background:#111}body.dark input[type=text],body.dark textarea,body.dark select,body.dark .question{background:#2c2c2e;color:#f2f2f7}body.dark .gray{background:#3a3a3c;color:#fff}body.dark #toolbar{background:#1c1c1ef2;color:#fff}
+@media(max-width:768px){body{flex-direction:column}#mobile-tabs{display:flex;flex:none}#editor,#preview{width:100%;min-width:0;height:calc(100vh - 54px)}body.tab-editor #preview,body.tab-preview #editor{display:none}body.tab-editor #editor,body.tab-preview #preview{display:flex}.grid2{grid-template-columns:1fr}.preview-header{padding:0 10px}.preview-header h3{font-size:13px}.btn{padding:8px 10px}}
+.lat{font-size:var(--lat,.85em)}
+.ans-label{display:inline-flex;align-items:center;justify-content:center;min-width:calc(21px * var(--scale,1));height:calc(21px * var(--scale,1));padding:0 calc(4px * var(--scale,1));border-radius:999px;background:var(--primary);color:#fff;font-weight:700;font-size:calc(12px * var(--scale,1));line-height:1;text-indent:0;vertical-align:middle;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#page-nav{display:flex;gap:6px;align-items:center;padding:8px 10px;background:rgba(255,255,255,.92);border-top:.5px solid var(--border);flex:none}
+#nav-chips{display:flex;gap:5px;overflow-x:auto;flex:1;padding:2px;scrollbar-width:none}#nav-chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:.5px solid var(--border);background:#fff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text)}
+.chip.cur{background:var(--primary);color:#fff;border-color:var(--primary)}
+#modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--panel);color:var(--text);border-radius:16px;max-width:520px;width:100%;max-height:84vh;overflow:auto;padding:18px;box-shadow:var(--shadow)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:15px}
+.modal-line{padding:7px 0;border-bottom:.5px solid var(--border);font-size:13.5px}
+.modal-line:last-child{border-bottom:0}
+.prob-line{cursor:pointer}.prob-line:active{opacity:.6}
+.modal-box input[type=number]{width:80px;padding:8px;border:.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}
+@media print{
+  body.bw{--primary:#000!important}html,body{height:auto!important;overflow:visible!important;background:#fff!important}#editor,#mobile-tabs,.preview-header,#toolbar,#busy,#boot,#page-nav,#modal{display:none!important}.page.no-print{display:none!important}#preview{display:block!important;height:auto!important;overflow:visible!important;background:#fff!important}#preview-scroll{display:block!important;overflow:visible!important;padding:0!important}#preview-wrapper{display:block!important;width:var(--page-w)!important;transform:none!important;margin:0 auto!important}.page{display:flex!important;box-shadow:none!important;margin:0 auto!important;break-after:page!important;page-break-after:always!important}.page:last-child{break-after:auto!important;page-break-after:auto!important}body.bw .category-title{background:none!important;color:#000!important;border-top:1.5px solid #000;border-bottom:1.5px solid #000;border-radius:0}body.bw .serial{display:inline-block!important;width:calc(21px * var(--scale,1))!important;height:calc(21px * var(--scale,1))!important;min-width:calc(21px * var(--scale,1))!important;min-height:calc(21px * var(--scale,1))!important;margin:0 0 0 6px!important;padding:0!important;background:#fff!important;color:#000!important;border:1.4px solid #000!important;border-radius:50%!important;box-sizing:border-box!important;font-family:Arial,-apple-system,sans-serif!important;font-size:calc(11px * var(--scale,1))!important;font-weight:700!important;font-style:normal!important;line-height:calc(21px * var(--scale,1))!important;letter-spacing:0!important;text-align:center!important;vertical-align:middle!important;overflow:visible!important;text-indent:0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body.bw .ans-label{background:#fff!important;color:#000!important;border:1.4px solid #000!important}body.bw .page-number{background:#fff!important;color:#000!important;border:1px solid #000}body.bw .chapter-title,body.bw .running{border-color:#000!important}body.bw .cover-border{border-color:#000!important}.watermark-text{opacity:.04!important}@page{size:210mm 297mm;margin:0}}
+</style>
+</head>
+<body class="tab-editor bw">
+<div id="boot"><div class="spinner"></div><h2>Notes Builder Pro</h2><div>ایپ لوڈ ہو رہی ہے...</div></div>
+<div id="measure-root"></div>
+<div id="mobile-tabs"><button class="tab active" data-tab="editor">📝 ایڈیٹر</button><button class="tab" data-tab="preview">👁️ پریویو</button></div>
+<aside id="editor">
+  <header class="app-header"><span>📚 Notes Builder Pro</span><span id="save-state" style="font-size:11px;color:var(--muted);font-weight:400"></span><label class="row" style="margin:0;color:var(--text)"><input id="dark-toggle" type="checkbox"> 🌙</label></header>
+  <main id="form">
+    <section class="card"><h4>📊 کتاب ایک نظر میں</h4><div id="dash" class="row wrap" style="gap:6px 16px;font-size:13px"></div></section>
+    <section class="card"><h4>کتاب کی بنیادی سیٹنگز</h4><label>کتاب کا نام</label><input id="book-title" type="text">
+      <div class="grid2"><div><label>ٹیکسٹ واٹرمارک</label><input id="watermark" type="text"></div><div><label>تھیم کلر</label><input id="theme" type="color" style="width:100%;height:40px;border:0"></div></div>
+      <label>لوگو واٹرمارک</label><div class="row wrap"><input id="logo" type="file" accept="image/*"><button id="remove-logo" class="btn red mini">تصویر ہٹائیں</button></div>
+      <label class="row" style="color:var(--text)"><input id="mathjax" type="checkbox"> MathJax فعال کریں</label>
+      <label class="row" style="color:var(--text)"><input id="auto-formula" type="checkbox" checked> خودکار فارمولا (H2SO4 خود H₂SO₄ بنے گا)</label>
+      <label>جواب سے پہلے نشان</label><select id="answer-label"><option value="">کوئی نہیں</option><option value="ج">ج</option><option value="جواب">جواب</option></select>
+    </section>
+    <section class="card"><div class="row"><h4 class="grow">🎨 ٹائٹل پیج</h4><label class="row" style="margin:0;color:var(--text)"><input id="cover-enabled" type="checkbox"> شامل کریں</label></div><div id="cover-fields"><div class="grid2keep"><input id="academy" type="text" placeholder="اکیڈمی یا سکول"><input id="subtitle" type="text" placeholder="سب ٹائٹل"><input id="author" type="text" placeholder="استاد"><input id="session" type="text" placeholder="سیشن"></div></div>
+    </section>
+    <section class="card"><h4>📑 چیپٹر مینجمنٹ</h4><div class="ch-row"><select id="chapter-select"></select><input id="chapter-title" type="text" placeholder="چیپٹر کا نام"><button id="add-chapter" class="btn gray" title="نیا چیپٹر">+ نیا</button><button id="clear-chapter" class="btn gray" title="چیپٹر صاف کریں">🧹</button><button id="delete-chapter" class="btn red" title="چیپٹر ڈیلیٹ کریں">🗑️</button></div></section>
+    <section class="card"><h4>🖨️ پرنٹ سلیکشن</h4><div id="chapter-checks"></div><label class="row" style="color:var(--text)"><input id="color-print" type="checkbox"> رنگین پرنٹ (جیسا پریویو میں ہے)</label></section>
+    <section class="card"><h4>💾 بیک اپ / ری سٹور</h4><button id="export" class="btn green full">⬇️ کتاب محفوظ کریں (.notes)</button><label>فائل اپلوڈ کریں</label><input id="import" type="file" accept=".notes,.json,.csv,.txt" multiple><button id="reset" class="btn red full" style="margin-top:10px">⚠️ پوری کتاب ڈیلیٹ کریں</button></section>
+    <div id="categories"></div><button id="add-category" class="btn blue full">+ نئی کیٹیگری</button>
+  </main>
+</aside>
+<section id="preview">
+  <header class="preview-header"><h3>👁️ لائیو پریویو <label class="row" style="display:inline-flex;margin:0;color:var(--text)"><input id="worksheet" type="checkbox"> صرف سوالات</label></h3><div class="preview-actions"><button id="problems-btn" class="btn gray">✓ کوئی مسلہ نہیں</button><button id="open-settings" class="btn gray">⚙️</button><button id="print" class="btn green">🖨️ پرنٹ</button></div></header>
+  <div id="toolbar"><div class="setting-row"><b id="settings-title">چیپٹر سیٹنگز</b><button id="close-settings" class="btn red mini">✕</button></div>
+    <div class="setting-row"><span>جواب فونٹ</span><div class="step"><button data-adjust="scale" data-delta="-.05">−</button><span id="v-scale"></span><button data-adjust="scale" data-delta=".05">+</button></div></div>
+    <div class="setting-row"><span>سوال سائز</span><div class="step"><button data-adjust="qSize" data-delta="-1">−</button><span id="v-qsize"></span><button data-adjust="qSize" data-delta="1">+</button></div></div>
+    <div class="setting-row"><span>سوال وزن</span><div class="step"><button data-adjust="qWeight" data-delta="-100">−</button><span id="v-qweight"></span><button data-adjust="qWeight" data-delta="100">+</button></div></div>
+    <div class="setting-row"><span>فارمولا سائز</span><div class="step"><button data-adjust="mathScale" data-delta="-.05">−</button><span id="v-math"></span><button data-adjust="mathScale" data-delta=".05">+</button></div></div>
+    <div class="setting-row"><span>لائن سپیس</span><div class="step"><button data-adjust="lh" data-delta="-.1">−</button><span id="v-lh"></span><button data-adjust="lh" data-delta=".1">+</button></div></div>
+    <div class="setting-row"><span>مارجن</span><div class="step"><button data-adjust="margin" data-delta="-.1">−</button><span id="v-margin"></span><button data-adjust="margin" data-delta=".1">+</button></div></div>
+    <div class="setting-row"><span>انگریزی سائز</span><div class="step"><button data-adjust="latinScale" data-delta="-.05">−</button><span id="v-lat"></span><button data-adjust="latinScale" data-delta=".05">+</button></div></div>
+    <div class="setting-row"><span>کالم</span><select id="columns"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+    <div class="setting-row"><span>لے آؤٹ</span><select id="layout"><option value="strict">نارمل</option><option value="compact">کمپیکٹ</option></select></div>
+    <div class="setting-row"><span>پیپر</span><select id="paper"><option value="210mm,297mm">A4</option><option value="216mm,356mm">Legal</option></select></div>
+    <div class="setting-row"><span>بارڈر</span><select id="border"><option value="none">نہیں</option><option value="1px solid #000">سنگل</option><option value="3px solid var(--primary)">رنگین</option></select></div>
+    <label class="row" style="color:var(--text)"><input id="running-header" type="checkbox" checked> اوپر چیپٹر نام</label>
+  </div>
+  <div id="busy"><div class="spinner" style="margin:auto"></div><p>صفحات بن رہے ہیں...</p></div>
+  <div id="preview-scroll"><div id="preview-wrapper"></div></div>
+  <div id="page-nav"><button id="nav-prev" class="btn gray mini">‹ پچھلا</button><div id="nav-chips"></div><button id="nav-next" class="btn gray mini">اگلا ›</button><span class="row" style="gap:4px"><button id="zoom-out" class="btn gray mini">−</button><span id="zoom-val" style="font-size:12px;min-width:38px;text-align:center">100%</span><button id="zoom-in" class="btn gray mini">+</button></span></div>
+</section>
+<div id="modal" class="hidden"><div class="modal-box"><div class="modal-head"><b id="modal-title"></b><button id="modal-close" class="btn red mini">✕</button></div><div id="modal-body"></div><div id="modal-actions" class="row wrap" style="margin-top:14px;gap:8px"></div></div></div>
+<script>
+window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]]},startup:{typeset:false}};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const SETTINGS={scale:1,qSize:18,qWeight:700,lh:1,margin:1,columns:'2',layout:'strict',mathScale:.85,latinScale:.85};
+const COVER={enabled:true,academyName:'الھادی اکیڈمی',subtitle:'برائے جماعت دہم',author:'سر محمد علی',session:'2025-2026'};
+const freshBook=()=>({bookTitle:'مضامین نوٹس',watermark:'',watermarkImage:'',themeColor:'#007aff',mathJax:false,autoFormula:true,answerLabel:'ج',coverPage:{...COVER},chapters:[newChapter('باب نمبر 1')]});
+function uid(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`}
+function newChapter(title){return{id:uid(),title,settings:{...SETTINGS},categories:[]}}
+const expandedQs=new Set();
+let book=freshBook(),chapterIndex=0,selectedIds=new Set(),saveTimer=null,renderTimer=null,renderToken=0,isRendering=false,observer=null;
+const DB='NotesBuilderProDB',STORE='BookStore',KEY='unb_book_data_v5';
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(new Error('Database blocked'))})}
+async function dbGet(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly'),r=tx.objectStore(STORE).get(KEY);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);tx.onerror=()=>reject(tx.error)})}
+async function dbSet(value){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite'),r=tx.objectStore(STORE).put(value,KEY);r.onerror=()=>reject(r.error);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);tx.oncomplete=resolve})}
+let saveAlertShown=false;
+function setSaveState(t){const e=$('save-state');if(e)e.textContent=t}
+function scheduleSave(render=true,scopeId=null){clearTimeout(saveTimer);setSaveState('محفوظ ہو رہا ہے…');saveTimer=setTimeout(()=>dbSet(structuredClone(book)).then(()=>setSaveState('✓ محفوظ '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))).catch(e=>{setSaveState('⚠️ محفوظ نہیں ہوا');if(!saveAlertShown){saveAlertShown=true;alert('ڈیٹا محفوظ نہیں ہو سکا: '+e.message+'\nکتاب بہت بڑی ہو گئی ہو تو فوراً ⬇️ کتاب محفوظ کریں (.notes) سے بیک اپ لے لیں')}}),250);if(render)scheduleRender(scopeId)}
+async function saveNow(){clearTimeout(saveTimer);setSaveState('محفوظ ہو رہا ہے…');await dbSet(structuredClone(book));setSaveState('✓ محفوظ '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))}
+function normalize(data){if(!data||typeof data!=='object'||!Array.isArray(data.chapters))throw new Error('غلط project structure');const out={...freshBook(),...data};out.coverPage={...COVER,...(data.coverPage||{})};out.chapters=data.chapters.map((ch,i)=>({id:String(ch?.id||uid()),title:String(ch?.title||`باب ${i+1}`),settings:{...SETTINGS,...(ch?.settings||{})},categories:Array.isArray(ch?.categories)?ch.categories.map(cat=>({title:String(cat?.title||'نئی کیٹیگری'),isCollapsed:Boolean(cat?.isCollapsed),questions:Array.isArray(cat?.questions)?cat.questions.map(q=>({q:String(q?.q||''),a:String(q?.a||''),img:typeof q?.img==='string'?q.img:''})):[]})):[]}));if(!out.chapters.length)out.chapters=[newChapter('باب نمبر 1')];return out}
+function syncUI(){
+ $('book-title').value=book.bookTitle||'';$('watermark').value=book.watermark||'';$('theme').value=book.themeColor||'#007aff';$('mathjax').checked=!!book.mathJax;$('auto-formula').checked=book.autoFormula!==false;$('answer-label').value=book.answerLabel??'ج';
+ $('cover-enabled').checked=!!book.coverPage.enabled;$('academy').value=book.coverPage.academyName||'';$('subtitle').value=book.coverPage.subtitle||'';$('author').value=book.coverPage.author||'';$('session').value=book.coverPage.session||'';
+ document.documentElement.style.setProperty('--primary',book.themeColor||'#007aff');updateCoverState();renderChapterControls();renderCategories();updateToolbar();updateDash()
+}
+function updateCoverState(){const enabled=$('cover-enabled').checked;$('cover-fields').style.opacity=enabled?'1':'.5';$('cover-fields').querySelectorAll('input').forEach(x=>x.disabled=!enabled)}
+function renderChapterControls(){const select=$('chapter-select');select.replaceChildren();book.chapters.forEach((ch,i)=>{const o=new Option(`${i+1}. ${ch.title}`,i,i===chapterIndex,i===chapterIndex);select.add(o)});$('chapter-title').value=book.chapters[chapterIndex]?.title||'';const box=$('chapter-checks');box.replaceChildren();book.chapters.forEach((ch,i)=>{const label=document.createElement('label');label.className='chapter-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=selectedIds.has(ch.id);cb.addEventListener('change',()=>{cb.checked?selectedIds.add(ch.id):selectedIds.delete(ch.id);scheduleRender()});const stats=document.createElement('span');stats.className='ch-stats';stats.dataset.chapterId=ch.id;stats.style.color='var(--muted)';stats.style.fontSize='12px';label.append(cb,document.createTextNode(`${i+1}. ${ch.title}`),stats);box.append(label)});fillChapterStats()}
+function button(text,cls,onClick){const b=document.createElement('button');b.type='button';b.className=`btn mini ${cls}`;b.textContent=text;b.addEventListener('click',onClick);return b}
+function renderCategories(){const root=$('categories');root.replaceChildren();const cats=book.chapters[chapterIndex].categories;const scopeId=book.chapters[chapterIndex].id;cats.forEach((cat,ci)=>{const card=document.createElement('section');card.className='category';const head=document.createElement('div');head.className='cat-head';head.append(document.createTextNode(`📂 ${cat.title||'نئی کیٹیگری'} (${cat.questions.filter(q=>q.q.trim()).length})`),document.createTextNode(cat.isCollapsed?'▼':'▲'));head.onclick=()=>{cat.isCollapsed=!cat.isCollapsed;scheduleSave(false);renderCategories()};card.append(head);if(!cat.isCollapsed){const body=document.createElement('div'),acts=document.createElement('div');acts.className='actions';acts.append(button('▽ سب کھولو','gray',()=>{cat.questions.forEach(q=>expandedQs.add(q));renderCategories()}),button('▷ سب بند','gray',()=>{cat.questions.forEach(q=>expandedQs.delete(q));renderCategories()}),button('⬆','gray',()=>move(cats,ci,-1,scopeId)),button('⬇','gray',()=>move(cats,ci,1,scopeId)),button('🗑','red',()=>{if(confirm('کیٹیگری حذف کر دیں؟')){cats.splice(ci,1);scheduleSave(true,scopeId);renderCategories()}}));body.append(acts);
+ const ct=document.createElement('input');ct.type='text';ct.value=cat.title;ct.addEventListener('input',()=>{cat.title=ct.value;scheduleSave(true,scopeId)});body.append(ct);
+ cat.questions.forEach((q,qi)=>{const qb=document.createElement('div');qb.className='question';
+ // v8.3: every question is a one-line dropdown row (number +
+ // the start of its text) — tap to open the full editor. The
+ // editor stays compact and a question is found by scanning
+ // the rows instead of scrolling past tall cards.
+ const qh=document.createElement('div');qh.className='q-head';
+ const toggle=document.createElement('span');toggle.className='q-toggle';
+ const preview=(q.q||'').trim().replace(/\s+/g,' ');
+ toggle.textContent=`${expandedQs.has(q)?'▼':'▶'} ${qi+1}. ${preview?preview.slice(0,70):'نیا سوال'}`;
+ toggle.onclick=()=>{expandedQs.has(q)?expandedQs.delete(q):expandedQs.add(q);renderCategories()};
+ const qa=document.createElement('div');qa.className='actions';qa.style.margin='0';
+ qa.append(button('⬆','gray',()=>move(cat.questions,qi,-1,scopeId)),button('⬇','gray',()=>move(cat.questions,qi,1,scopeId)),button('⧉','gray',()=>{const copy={...q};cat.questions.splice(qi+1,0,copy);expandedQs.add(copy);scheduleSave(true,scopeId);renderCategories()}),button('✖','red',()=>{cat.questions.splice(qi,1);expandedQs.delete(q);scheduleSave(true,scopeId);renderCategories()}));
+ qh.append(toggle,qa);qb.append(qh);
+ if(expandedQs.has(q)){
+ const qInput=document.createElement('textarea');qInput.className='q-input';qInput.value=q.q;qInput.placeholder='سوال';qInput.addEventListener('input',()=>{q.q=qInput.value;scheduleSave(true,scopeId)});const a=document.createElement('textarea');a.value=q.a;a.placeholder='جواب';a.addEventListener('input',()=>{q.a=a.value;scheduleSave(true,scopeId)});const file=document.createElement('input');file.type='file';file.accept='image/*';file.addEventListener('change',async()=>{if(file.files[0]){try{q.img=await compressImage(file.files[0],1400,.82,true);scheduleSave(true,scopeId);renderCategories()}catch(e){alert('تصویر لوڈ نہیں ہوئی')}}});qb.append(qInput,a,file);if(q.img)qb.append(button('تصویر مٹائیں','red',()=>{q.img='';scheduleSave(true,scopeId);renderCategories()}));}
+ body.append(qb)});
+ body.append(button('+ نیا سوال','gray',()=>{const nq={q:'',a:'',img:''};cat.questions.push(nq);expandedQs.add(nq);scheduleSave(true,scopeId);renderCategories()}));card.append(body)}root.append(card)})}
+function move(arr,i,d,scopeId){const j=i+d;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];scheduleSave(true,scopeId);renderCategories()}
+async function compressImage(file,maxWidth=1400,quality=.82,forceJpeg=false){const bmp=await createImageBitmap(file),ratio=Math.min(1,maxWidth/bmp.width),canvas=document.createElement('canvas');canvas.width=Math.round(bmp.width*ratio);canvas.height=Math.round(bmp.height*ratio);canvas.getContext('2d').drawImage(bmp,0,0,canvas.width,canvas.height);bmp.close();
+ // v7: question photos are stored as JPEG (a PNG photo can be
+ // several MB and silently overflows the book's storage); the
+ // logo watermark keeps PNG so its transparency survives.
+ return canvas.toDataURL(!forceJpeg&&file.type==='image/png'?'image/png':'image/jpeg',quality)}
+let renderScope=undefined;
+function scheduleRender(scopeId=null){
+ // scopeId = rebuild only that chapter (editor typing); null =
+ // full rebuild. A full request always wins over a scoped one.
+ if(scopeId===null)renderScope=null;else if(renderScope===undefined)renderScope=scopeId;
+ clearTimeout(renderTimer);
+ if(innerWidth<=768&&document.body.classList.contains('tab-editor'))return;
+ renderTimer=setTimeout(()=>{const s=renderScope;renderScope=undefined;buildPreview(s===undefined?null:s)},220);
+}
+function textEl(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=text;return el}
+function setChapterVars(el,ch){el.style.setProperty('--scale',ch.settings.scale);el.style.setProperty('--q-size',`${ch.settings.qSize}px`);el.style.setProperty('--q-weight',ch.settings.qWeight);el.style.setProperty('--lh',ch.settings.lh);el.style.setProperty('--math-scale',ch.settings.mathScale);el.style.setProperty('--cols',ch.settings.columns);el.style.setProperty('--margin',ch.settings.margin);el.style.setProperty('--lat',`${ch.settings.latinScale??.85}em`)}
+function pageFor(ch,num,measuring=false){const page=document.createElement('div');page.className='page';page.dataset.chapterId=ch.id;setChapterVars(page,ch);if(!measuring){if(book.watermarkImage){const img=document.createElement('img');img.className='watermark-img';img.src=book.watermarkImage;page.append(img)}else if(book.watermark){page.append(textEl('div','watermark-text',book.watermark))}}if($('running-header').checked){const r=document.createElement('div');r.className='running';r.append(textEl('b','',ch.title),textEl('span','',book.bookTitle));page.append(r)}const cols=document.createElement('div');cols.className=`columns ${ch.settings.layout==='compact'?'compact':''}`;page.append(cols);if(!measuring){const f=document.createElement('div');f.className='footer';f.append(textEl('span','',book.bookTitle),textEl('span','page-number',`صفحہ ${num}`));page.append(f)}return{page,cols}}
+/* ---- v2: render-time formula formatting (stored text never changes) ----
+   Plain typed formulas become real sub/superscripts in the preview and
+   print: H2SO4 -> H₂SO₄, Ca(OH)2 -> Ca(OH)₂, cm2 -> cm², m/s2 -> m/s²,
+   x2y3 -> x²y³, CH2=CH2 -> CH₂=CH₂. Explicit _{..} / ^{..} markup also
+   works. Strict rules keep ordinary text safe: a lone letter+digit
+   (x2, B12, F2, P4, S8) is left alone, single-element formulas convert
+   only for the common gases (H, N, O, Cl, Br, I), brand words (USB,
+   LED...) never convert, and $...$ MathJax spans pass through
+   untouched. Book setting: book.autoFormula (default on). */
+const SUBC={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋','(':'₍',')':'₎','a':'ₐ','e':'ₑ','o':'ₒ','x':'ₓ','h':'ₕ','k':'ₖ','l':'ₗ','m':'ₘ','n':'ₙ','p':'ₚ','s':'ₛ','t':'ₜ'};
+const SUPC={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','(':'⁽',')':'⁾','n':'ⁿ','i':'ⁱ'};
+const toSub=s=>[...s].map(c=>SUBC[c]||c).join('');
+const toSup=s=>[...s].map(c=>SUPC[c]||c).join('');
+const ELEMENTS=new Set('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og'.split(' '));
+const SINGLE_OK=new Set(['H','N','O','Cl','Br','I']);
+const CAPS_STOP=new Set('USB LED LCD CPU RAM ROM AC DC TV UV IR DNA RNA AIDS HIV COVID WHO NASA MCQ MCQS SQ LQ PDF HTML CSS'.split(' '));
+const UNITS=new Set(['cm','mm','km','m','g','kg','s','mol','L','dm','nm','mL']);
+function chemConvert(core){
+ if(!core||/[^A-Za-z0-9()]/.test(core)||CAPS_STOP.has(core))return null;
+ let i=0;const n=core.length;let out='';
+ let coef='';while(i<n&&/\d/.test(core[i]))coef+=core[i++];
+ if(coef&&i>=n)return null;
+ out+=coef;
+ let elements=0,converted=0;const distinct=new Set();
+ function parseSeq(stop){
+  let count=0;
+  while(i<n&&core[i]!==stop){
+   const c=core[i];
+   if(c==='('){
+    i++;out+='(';
+    const inner=parseSeq(')');
+    if(inner<1||core[i]!==')')return -1;
+    i++;out+=')';count+=inner;
+    let d='';while(i<n&&/\d/.test(core[i]))d+=core[i++];
+    if(d){out+=toSub(d);converted++}
+   }else if(c>='A'&&c<='Z'){
+    let el=c;const two=core.substr(i,2);
+    if(two.length===2&&ELEMENTS.has(two)&&two[1]>='a'&&two[1]<='z')el=two;
+    else if(!ELEMENTS.has(el))return -1;
+    i+=el.length;out+=el;elements++;distinct.add(el);count++;
+    let d='';while(i<n&&/\d/.test(core[i]))d+=core[i++];
+    if(d){out+=toSub(d);converted++}
+   }else return -1;
+  }
+  return count;
+ }
+ if(parseSeq(undefined)<1||i!==n)return null;
+ if(!converted)return null;
+ if(elements===1&&!SINGLE_OK.has([...distinct][0]))return null;
+ return out;
+}
+function mathConvert(core){
+ let m;
+ if((m=core.match(/^\(([^()]*)\)(\d)$/))&&m[1].length<=8&&/[A-Za-z0-9]/.test(m[1]))return '('+m[1]+')'+toSup(m[2]);
+ if((m=core.match(/^(.+)\/([A-Za-z]+)(\d)$/))&&UNITS.has(m[2])&&(UNITS.has(m[1])||/^[0-9.]+$/.test(m[1])||/^[a-z]$/.test(m[1])))return m[1]+'/'+m[2]+toSup(m[3]);
+ if((m=core.match(/^([A-Za-z]+)(\d)$/))&&UNITS.has(m[1]))return m[1]+toSup(m[2]);
+ if(/^([A-Za-z]\d)+$/.test(core)&&core.length>=4)return core.replace(/\d/g,c=>toSup(c));
+ return null;
+}
+function formatToken(tok){
+ if(tok.includes('_{')||tok.includes('^{')){
+  const t=tok.replace(/_\{([^}]*)\}/g,(x,g)=>toSub(g)).replace(/\^\{([^}]*)\}/g,(x,g)=>toSup(g));
+  if(t!==tok)return t;
+ }
+ const ci=tok.indexOf('^');
+ if(ci>0&&tok[ci+1]&&tok[ci+1]!=='{'){
+  const m=tok.slice(ci+1).match(/^[+-]?[\dA-Za-z]+[+-]?/);
+  if(m&&/\d/.test(m[0])){
+   const head=tok.slice(0,ci);
+   return (chemConvert(head)||mathConvert(head)||head)+toSup(m[0])+tok.slice(ci+1+m[0].length);
+  }
+ }
+ let core=tok,post='';
+ const tm=tok.match(/^(.*?)([.,;:!?]+)$/);
+ if(tm){core=tm[1];post=tm[2]}
+ const pm=core.match(/^\(([^()]*)\)$/);
+ if(pm){const c=chemConvert(pm[1]);if(c)return '('+c+')'+post}
+ if(/[=—–-]/.test(core)){
+  const parts=core.split(/([=—–-])/);
+  if(parts.length>1){
+   const conv=parts.map(p=>{if(!p||/^[=—–-]$/.test(p))return p;return chemConvert(p)||mathConvert(p)||p});
+   if(conv.join('')!==core)return conv.join('')+post;
+   return tok;
+  }
+ }
+ return chemConvert(core)||mathConvert(core)||tok;
+}
+const MATH_SPLIT=/(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])/g;
+function appendRich(el,text){
+ // v4: pasted text often carries non-breaking spaces (U+00A0 /
+ // U+202F), which make a whole equation one unbreakable lump that
+ // spills across the column rule. Normalise them to plain spaces
+ // at render time (stored text untouched) so lines wrap naturally.
+ const s=String(text??'').replace(/[  ]/g,' ');
+ if(book.autoFormula===false){el.textContent=s;return}
+ s.split(MATH_SPLIT).forEach((part,idx)=>{
+  if(idx%2===1){el.append(document.createTextNode(part));return}
+  part.split(/(\s+)/).forEach(tok=>{
+   if(!tok)return;
+   if(/^\s+$/.test(tok)){el.append(document.createTextNode(tok));return}
+   const formatted=formatToken(tok);
+   // v8: Latin words look larger than Nastaleeq Urdu at the same
+   // point size — wrap pure-Latin tokens in a span that scales
+   // them to match (per-chapter setting: انگریزی سائز).
+   if(!/[؀-ۿ]/.test(tok)&&/[A-Za-z0-9]/.test(tok)){
+    const sp=document.createElement('span');sp.className='lat';sp.textContent=formatted;el.append(sp);
+   }else el.append(document.createTextNode(formatted));
+  });
+ });
+}
+function splitAnswerChunks(a){
+ // v7: split an answer into flowing paragraph chunks WITHOUT
+ // cutting through a math span. The old split on every newline
+ // broke multi-line $$...$$ equations in half (unbalanced
+ // delimiters -> raw text). Math spans stay atomic; only plain
+ // text between them is split at newlines.
+ const chunks=[];let cur='';
+ const push=()=>{const t=cur.trim();if(t)chunks.push(t);cur=''};
+ String(a).split(MATH_SPLIT).forEach((part,idx)=>{
+  if(idx%2===1){cur+=part;return}
+  part.split(/\n+/).forEach((seg,i)=>{if(i>0)push();cur+=seg});
+ });
+ push();
+ return chunks;
+}
+function appendLatinAware(el,text){
+ // v8: same Latin-size matching for titles, which are set as
+ // plain text and never pass through appendRich.
+ String(text??'').split(/(\s+)/).forEach(tok=>{
+  if(!tok)return;
+  if(/^\s+$/.test(tok)||/[؀-ۿ]/.test(tok)||!/[A-Za-z0-9]/.test(tok)){el.append(document.createTextNode(tok));return}
+  const sp=document.createElement('span');sp.className='lat';sp.textContent=tok;el.append(sp);
+ });
+}
+function chapterElements(ch){const frag=[];const title=document.createElement('div');title.className='chapter-title';const h1=document.createElement('h1');appendLatinAware(h1,ch.title);title.append(h1);setChapterVars(title,ch);frag.push(title);let serial=1;ch.categories.forEach(cat=>{const valid=cat.questions.filter(q=>q.q.trim());if(!valid.length)return;const catTitle=document.createElement('div');catTitle.className='category-title';appendLatinAware(catTitle,cat.title);setChapterVars(catTitle,ch);frag.push(catTitle);valid.forEach((q,index)=>{const group=document.createElement('div');group.className='keep-group';setChapterVars(group,ch);const line=document.createElement('div');line.className='qline';const qSpan=document.createElement('span');appendRich(qSpan,q.q);line.append(textEl('span','serial',String(serial++)),qSpan);group.append(line);const chunks=q.a.trim()?splitAnswerChunks(q.a):[];if(chunks.length){const ans=document.createElement('div');ans.className='answer';if(book.answerLabel){const lb=document.createElement('span');lb.className='ans-label';lb.textContent=book.answerLabel;ans.append(lb,document.createTextNode(' '))}appendRich(ans,chunks[0]);group.append(ans)}frag.push(group);for(let ci=1;ci<chunks.length;ci++){const cont=document.createElement('div');cont.className='answer cont';setChapterVars(cont,ch);appendRich(cont,chunks[ci]);frag.push(cont)}if(q.img){const w=document.createElement('div');w.className='q-image-wrap';setChapterVars(w,ch);const img=document.createElement('img');img.className='q-image';img.src=q.img;w.append(img);frag.push(w)}})});return frag}
+function fitMath(root){
+ // v5: a typeset MathJax equation is ONE unbreakable block — when
+ // it is wider than the column it spills across the column rule
+ // or off the page edge (the long $$...$$ equations in real
+ // books do exactly this). Shrink each equation's font just
+ // enough to fit the width available to it, measured live, so
+ // it adapts to the current font, column count and paper size.
+ // Runs on the measure page before pagination, so page breaks
+ // are computed with the fitted heights.
+ root.querySelectorAll('mjx-container').forEach(m=>{
+  const host=m.closest('.answer,.qline,.category-title');
+  if(!host)return;
+  const avail=host.clientWidth;
+  if(avail<=0)return;
+  const inner=m.querySelector('mjx-math')||m;
+  for(let pass=0;pass<2;pass++){
+   const w=inner.getBoundingClientRect().width;
+   if(w<=avail)break;
+   const cur=parseFloat(getComputedStyle(m).fontSize);
+   if(!(cur>0))break;
+   m.style.setProperty('font-size',(cur*avail/w*0.995).toFixed(1)+'px','important');
+  }
+  // v8: remember equations that STILL do not fit — the problems
+  // list (مسائل) reports their page after pagination.
+  if(inner.getBoundingClientRect().width>avail+1)m.dataset.tooWide='1';
+ });
+}
+async function waitImages(root){await Promise.all([...root.querySelectorAll('img')].map(img=>img.complete&&img.naturalWidth?(img.decode?.().catch(()=>{})||Promise.resolve()):new Promise(res=>{img.onload=img.onerror=res})))}
+function overflow(cols){return Math.ceil(cols.scrollWidth)>Math.ceil(cols.clientWidth)+4}
+let renderQueued=false,queuedScope=undefined;
+function renumberFooters(){let n=1;$('preview-wrapper').querySelectorAll('.page').forEach(p=>{if(p.dataset.cover)return;const s=p.querySelector('.page-number');if(s)s.textContent=`صفحہ ${n}`;n++})}
+async function buildPreview(onlyId=null){
+ // v6: never run two builds at once. Overlapping builds (e.g.
+ // the first render racing the MathJax 'load' re-render) wiped
+ // each other's measuring area mid-build, measurements collapsed
+ // to zero, and every question piled onto ONE page until a
+ // refresh. A build requested while one is running is queued
+ // and runs once, right after it finishes.
+ if(isRendering){renderQueued=true;if(onlyId===null)queuedScope=null;else if(queuedScope===undefined)queuedScope=onlyId;return}
+ const token=++renderToken;
+ isRendering=true;
+ $('busy').style.display='block';
+ observer?.disconnect();
+ const wrapper=$('preview-wrapper'),measure=$('measure-root');
+ measure.replaceChildren();
+ const staging=document.createElement('div');
+ staging.style.width='var(--page-w)';
+ staging.style.display='flex';
+ staging.style.flexDirection='column';
+ staging.style.gap='20px';
+ measure.append(staging);
+ let pageNum=1;
+ // v7 scoped build: when only one chapter changed (editor
+ // typing), rebuild just that chapter's pages and splice them
+ // into the preview in place, then renumber every footer — the
+ // other chapters are not re-measured, so typing stays fast in
+ // a big book. Falls back to a full build when the chapter is
+ // not already on screen.
+ let scopedOld=null;
+ if(onlyId){
+  const olds=[...wrapper.querySelectorAll(`.page[data-chapter-id="${onlyId}"]`)];
+  if(olds.length&&selectedIds.has(onlyId)){
+   scopedOld=olds;let n=0;
+   for(const p of wrapper.children){if(p===olds[0])break;if(!p.dataset.cover)n++}
+   pageNum=n+1;
+  }else onlyId=null;
+ }
+ try{
+  if(!onlyId&&book.coverPage.enabled){
+   const p=document.createElement('div');p.className='page cover';p.dataset.cover='1';
+   p.append(Object.assign(document.createElement('div'),{className:'cover-border'}));
+   const c=document.createElement('div');c.className='cover-content';
+   if(book.coverPage.academyName)c.append(textEl('div','academy',book.coverPage.academyName));
+   c.append(textEl('div','cover-title',book.bookTitle||'کتاب کا نام'));
+   if(book.coverPage.subtitle)c.append(textEl('div','subtitle',book.coverPage.subtitle));
+   const b=document.createElement('div');b.className='cover-bottom';
+   if(book.coverPage.author)b.append(textEl('div','',`استاد: ${book.coverPage.author}`));
+   if(book.coverPage.session)b.append(textEl('div','session',`سیشن: ${book.coverPage.session}`));
+   c.append(b);p.append(c);staging.append(p);
+  }
+  const selected=onlyId?book.chapters.filter(ch=>ch.id===onlyId):book.chapters.filter(ch=>selectedIds.has(ch.id));
+  for(const ch of selected){
+   if(token!==renderToken)return;
+   const source=pageFor(ch,0,true);
+   measure.append(source.page);
+   chapterElements(ch).forEach(e=>source.cols.append(e));
+   if(book.mathJax&&window.MathJax?.startup?.promise){
+    try{await Promise.race([window.MathJax.startup.promise,new Promise(r=>setTimeout(r,2500))])}catch(e){}
+   }
+   if(book.mathJax&&window.MathJax?.typesetPromise){
+    try{window.MathJax.typesetClear?.([source.cols]);await window.MathJax.typesetPromise([source.cols]);fitMath(source.cols)}catch(e){console.warn(e)}
+   }
+   await waitImages(source.cols);
+   // v8.2: the ج / جواب label belongs UNDER the serial number,
+   // in the margin — not inline with the answer text. Give each
+   // labelled answer a hanging indent: the label sits at the
+   // page edge (under the serial), the answer text and all its
+   // wrapped lines align where the question text starts. The
+   // zone is measured from the real label, so ج and جواب both
+   // fit exactly in any font; continuation chunks follow the
+   // same alignment.
+   let labelZone=0;
+   [...source.cols.children].forEach(node=>{
+    if(node.classList?.contains('keep-group')){
+     const lb=node.querySelector('.ans-label');
+     if(lb){
+      const ans=lb.parentElement;
+      labelZone=Math.max(27*(ch.settings.scale||1),Math.ceil(lb.getBoundingClientRect().width)+8);
+      ans.style.marginRight='0px';
+      ans.style.paddingInlineStart=labelZone+'px';
+      ans.style.textIndent=(-labelZone)+'px';
+     }else labelZone=0;
+    }else if(labelZone&&node.classList?.contains('answer')&&node.classList.contains('cont')){
+     node.style.marginRight='0px';
+     node.style.paddingInlineStart=labelZone+'px';
+    }
+   });
+   const nodes=[...source.cols.children];
+   source.page.remove();
+   let current=pageFor(ch,pageNum++);
+   staging.append(current.page);
+   let placedCount=0;
+   const tick=async()=>{if(++placedCount%12===0)await new Promise(r=>requestAnimationFrame(r))};
+   const newPage=()=>{current=pageFor(ch,pageNum++);staging.append(current.page)};
+   for(const node of nodes){
+    if(token!==renderToken)return;
+    current.cols.append(node);
+    if(overflow(current.cols)){
+     current.cols.removeChild(node);
+     const prevCols=current.cols;
+     newPage();
+     // v3: never strand a section/chapter title at the bottom of
+     // the previous page — pull trailing titles along with the
+     // question, unless that would leave the page empty.
+     const pulled=[];
+     let last=prevCols.lastElementChild;
+     while(last&&(last.classList.contains('category-title')||last.classList.contains('chapter-title'))){pulled.unshift(last);prevCols.removeChild(last);last=prevCols.lastElementChild}
+     if(pulled.length&&prevCols.childElementCount>0)pulled.forEach(t=>current.cols.append(t));
+     else pulled.forEach(t=>prevCols.append(t));
+     current.cols.append(node);
+     if(overflow(current.cols)){
+      // v2: a node taller than a whole page used to be CLIPPED by
+      // the column box (silent content loss). A question group is
+      // now split into its parts — question line + first answer
+      // chunk stay together — and the rest flows to the next page.
+      if(node.classList.contains('keep-group')&&node.childElementCount>1){
+       current.cols.removeChild(node);
+       const kids=[...node.children];
+       const units=[];
+       const head=document.createElement('div');
+       head.append(kids[0]);
+       if(kids.length>1)head.append(kids[1]);
+       units.push(head);
+       for(let k=2;k<kids.length;k++)units.push(kids[k]);
+       for(const unit of units){
+        if(token!==renderToken)return;
+        current.cols.append(unit);
+        if(overflow(current.cols)){
+         current.cols.removeChild(unit);
+         newPage();
+         current.cols.append(unit);
+        }
+        // v7 last resort: a single chunk taller than a whole
+        // fresh page may fragment across that page's columns
+        // instead of being clipped.
+        if(overflow(current.cols))unit.style.breakInside='auto';
+        await tick();
+       }
+      }else{
+       node.style.breakInside='auto';
+       node.style.pageBreakInside='auto';
+      }
+     }
+    }
+    await tick();
+   }
+  }
+  if(token!==renderToken)return;
+  const completed=[...staging.children];
+  if(scopedOld){
+   completed.forEach(p=>wrapper.insertBefore(p,scopedOld[0]));
+   scopedOld.forEach(p=>p.remove());
+   renumberFooters();
+  }else{
+   wrapper.replaceChildren(...completed);
+  }
+  wrapper.classList.toggle('worksheet',$('worksheet').checked);
+  collectProblems();
+  refreshBookStats();
+  buildNav();
+  scalePreview();
+ }catch(e){
+  console.error(e);
+  alert('پریویو بنانے میں خرابی: '+e.message);
+ }finally{
+  if(token===renderToken){
+   measure.replaceChildren();
+   isRendering=false;
+   $('busy').style.display='none';
+   if(renderQueued){renderQueued=false;const qs=queuedScope;queuedScope=undefined;scheduleRender(qs===undefined?null:qs)}
+  }
+ }
+}
+let userZoom=Number(localStorage.getItem('unb_zoom'))||1;
+function scalePreview(){const w=$('preview-wrapper'),first=w.querySelector('.page');if(!first)return;w.style.transform='none';w.style.marginBottom='0';const fit=Math.min(($('preview-scroll').clientWidth-36)/first.offsetWidth,1);const scale=Math.max(fit*userZoom,.1);w.style.transform=`scale(${scale})`;w.style.marginBottom=scale<1?`-${Math.max(0,w.scrollHeight*(1-scale))}px`:'0px';const zv=$('zoom-val');if(zv)zv.textContent=`${Math.round(userZoom*100)}%`}
+/* v7: the scroll observer that silently switched the editing
+   chapter (and with it the Settings target) while the user was
+   just reading the preview is removed — Settings always apply
+   to the chapter chosen in the editor. */
+function updateToolbar(){const s=book.chapters[chapterIndex].settings;$('settings-title').textContent=`سیٹنگز: ${book.chapters[chapterIndex].title}`;$('v-scale').textContent=`${Math.round(s.scale*16)}px`;$('v-qsize').textContent=`${s.qSize}px`;$('v-qweight').textContent=s.qWeight;$('v-math').textContent=`${Math.round(s.mathScale*100)}%`;$('v-lh').textContent=Number(s.lh).toFixed(1);$('v-margin').textContent=Number(s.margin).toFixed(1);$('v-lat').textContent=`${Math.round((s.latinScale??.85)*100)}%`;$('columns').value=s.columns;$('layout').value=s.layout}
+function detectDelimiter(text){const line=(text.split(/\r?\n/).find(x=>x.trim())||'');return(line.match(/;/g)||[]).length>(line.match(/,/g)||[]).length?';':','}
+function parseCSV(text){
+ // v7: a quote only opens a quoted field at the START of a field.
+ // The old parser toggled quote mode on ANY '"' in the text, so
+ // one stray quote in an unquoted answer (What is "resonance)
+ // swallowed the whole rest of the file into a single field.
+ const delimiter=detectDelimiter(text),rows=[];let row=[],value='',quoted=false,fieldStart=true;
+ const pushField=()=>{row.push(value);value='';fieldStart=true};
+ const pushRow=()=>{pushField();if(row.some(x=>x.trim()))rows.push(row);row=[]};
+ for(let i=0;i<text.length;i++){
+  const c=text[i];
+  if(quoted){
+   if(c==='"'&&text[i+1]==='"'){value+='"';i++}
+   else if(c==='"')quoted=false;
+   else value+=c;
+  }else if(c==='"'&&fieldStart){quoted=true;fieldStart=false}
+  else if(c===delimiter)pushField();
+  else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;pushRow()}
+  else{value+=c;fieldStart=false}
+ }
+ if(value||row.length||quoted){pushField();if(row.some(x=>x.trim()))rows.push(row)}
+ return rows;
+}
+/* ---- v8 import: parse first, preview, then write ---- */
+function csvGroups(text){
+ const rows=parseCSV(text);
+ if(rows.length&&/^(category|کیٹیگری|قسم)$/i.test((rows[0][0]||'').trim()))rows.shift();
+ const groups=new Map();let total=0,emptyAnswers=0;
+ rows.forEach(cols=>{
+  if(cols.length<2)return;
+  const cat=cols[0].trim(),q=cols[1].trim(),a=cols.slice(2).join(detectDelimiter(text)).trim();
+  if(!cat||!q)return;
+  if(!groups.has(cat))groups.set(cat,[]);
+  groups.get(cat).push({q,a,img:''});total++;if(!a)emptyAnswers++;
+ });
+ return{groups,total,emptyAnswers};
+}
+function mergeIntoChapter(ch,groups){
+ // v7 rules: merge into a same-named category; skip questions
+ // whose text already exists there (re-import is safe).
+ let added=0,skipped=0;
+ for(const[title,questions]of groups){
+  let cat=ch.categories.find(c=>c.title===title);
+  if(!cat){cat={title,isCollapsed:true,questions:[]};ch.categories.push(cat)}
+  const seen=new Set(cat.questions.map(x=>x.q.trim().replace(/\s+/g,' ')));
+  for(const q of questions){
+   const key=q.q.trim().replace(/\s+/g,' ');
+   if(seen.has(key)){skipped++;continue}
+   seen.add(key);cat.questions.push(q);added++;
+  }
+ }
+ return{added,skipped};
+}
+async function importFile(file){const text=(await file.text()).replace(/^\uFEFF/,'');book=normalize(JSON.parse(text));chapterIndex=0;selectedIds=new Set(book.chapters.map(ch=>ch.id));await saveNow();syncUI();scheduleRender();return 'کتاب لوڈ ہو گئی'}
+function applyPaper(value){const[w,h]=value.split(',');document.documentElement.style.setProperty('--page-w',w);document.documentElement.style.setProperty('--page-h',h);let st=$('dynamic-page');if(!st){st=document.createElement('style');st.id='dynamic-page';document.head.append(st)}st.textContent=`@media print{@page{size:${w} ${h};margin:0}}`}
+let mjxWarned=false;
+function mathjaxWarn(){
+ // v7: MathJax comes from a CDN — when it cannot load (offline),
+ // say so once instead of silently showing raw $...$ text.
+ if(mjxWarned||!book.mathJax)return;mjxWarned=true;
+ const d=document.createElement('div');
+ d.style.cssText='position:fixed;z-index:9998;bottom:14px;left:50%;transform:translateX(-50%);max-width:92%;background:#ff3b30;color:#fff;padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.25);cursor:pointer';
+ d.textContent='⚠️ MathJax لوڈ نہیں ہوا — انٹرنیٹ کنکشن چیک کریں۔ Equations فی الحال سادہ متن میں دکھائی دیں گی۔ (بند کرنے کے لیے چھوئیں)';
+ d.onclick=()=>d.remove();
+ document.body.append(d);
+}
+/* ---- v8 shared modal (import preview/report, problems, print) ---- */
+function showModal(title,bodyEls,actions){
+ $('modal-title').textContent=title;
+ $('modal-body').replaceChildren(...bodyEls);
+ const act=$('modal-actions');act.replaceChildren();
+ (actions||[]).forEach(a=>{
+  const b=document.createElement('button');b.type='button';b.className=`btn ${a.cls||'gray'}`;b.textContent=a.label;
+  b.onclick=()=>{if(a.fn)a.fn()};act.append(b);
+ });
+ $('modal').classList.remove('hidden');
+}
+function closeModal(){$('modal').classList.add('hidden')}
+function modalLine(text){const d=document.createElement('div');d.className='modal-line';d.textContent=text;return d}
+/* ---- v8 problems list (مسائل): unfitted equations + empty answers ---- */
+let lastProblems=[];
+function collectProblems(){
+ const probs=[];
+ $('preview-wrapper').querySelectorAll('.page').forEach(p=>{
+  if(p.dataset.cover)return;
+  if(p.querySelector('mjx-container[data-too-wide]')){
+   const num=p.querySelector('.page-number')?.textContent||'صفحہ';
+   probs.push({el:p,text:`${num}: ایک equation اب بھی column سے بڑی ہے`});
+  }
+ });
+ book.chapters.filter(ch=>selectedIds.has(ch.id)).forEach(ch=>{
+  let serial=0;
+  ch.categories.forEach(cat=>cat.questions.forEach(q=>{
+   if(!q.q.trim())return;serial++;
+   if(!q.a.trim())probs.push({el:null,text:`${ch.title} — سوال ${serial}: جواب خالی ہے`});
+  }));
+ });
+ lastProblems=probs;
+ const b=$('problems-btn');
+ if(b){b.textContent=probs.length?`⚠️ مسائل (${probs.length})`:'✓ کوئی مسلہ نہیں';b.className=`btn ${probs.length?'red':'gray'}`}
+}
+/* ---- v8 dashboard + per-chapter stats ---- */
+let lastPageCounts={},lastTotalPages=0;
+function dashItem(t){const s=document.createElement('span');s.textContent=t;return s}
+function updateDash(){
+ const qs=book.chapters.reduce((n,ch)=>n+ch.categories.reduce((m,c)=>m+c.questions.filter(q=>q.q.trim()).length,0),0);
+ const kb=Math.max(1,Math.round(JSON.stringify(book).length/1024));
+ $('dash').replaceChildren(dashItem(`چیپٹر: ${book.chapters.length}`),dashItem(`سوال: ${qs}`),dashItem(`صفحات: ${lastTotalPages||'—'}`),dashItem(`سائز: ${kb} KB`));
+}
+function fillChapterStats(){
+ document.querySelectorAll('.ch-stats').forEach(sp=>{
+  const ch=book.chapters.find(c=>c.id===sp.dataset.chapterId);if(!ch)return;
+  const qs=ch.categories.reduce((n,c)=>n+c.questions.filter(q=>q.q.trim()).length,0);
+  sp.textContent=` — ${qs} سوال`+(lastPageCounts[ch.id]?` · ${lastPageCounts[ch.id]} صفحے`:'');
+ });
+}
+function refreshBookStats(){
+ const counts={};let total=0;
+ $('preview-wrapper').querySelectorAll('.page').forEach(p=>{
+  if(p.dataset.cover)return;total++;
+  if(p.dataset.chapterId)counts[p.dataset.chapterId]=(counts[p.dataset.chapterId]||0)+1;
+ });
+ lastPageCounts=counts;lastTotalPages=total;
+ fillChapterStats();updateDash();
+}
+/* ---- v8 page navigator ---- */
+let curPageIdx=0;
+function buildNav(){
+ const chips=$('nav-chips');if(!chips)return;chips.replaceChildren();
+ const pages=[...$('preview-wrapper').querySelectorAll('.page')];
+ if(curPageIdx>=pages.length)curPageIdx=Math.max(0,pages.length-1);
+ pages.forEach((p,i)=>{
+  const c=document.createElement('button');c.type='button';c.className='chip'+(i===curPageIdx?' cur':'');
+  c.textContent=p.dataset.cover?'غلاف':(p.querySelector('.page-number')?.textContent.replace('صفحہ ','')||String(i));
+  c.onclick=()=>{curPageIdx=i;p.scrollIntoView({behavior:'smooth',block:'start'});buildNav()};
+  chips.append(c);
+ });
+}
+function gotoPage(d){
+ const pages=[...$('preview-wrapper').querySelectorAll('.page')];if(!pages.length)return;
+ curPageIdx=Math.max(0,Math.min(pages.length-1,curPageIdx+d));
+ pages[curPageIdx].scrollIntoView({behavior:'smooth',block:'start'});buildNav();
+}
+function bind(){
+ ['book-title','watermark'].forEach(id=>$(id).addEventListener('input',()=>{book[id==='book-title'?'bookTitle':'watermark']=$(id).value;scheduleSave()}));$('theme').oninput=()=>{book.themeColor=$('theme').value;document.documentElement.style.setProperty('--primary',book.themeColor);scheduleSave()};$('mathjax').onchange=()=>{book.mathJax=$('mathjax').checked;scheduleSave()};$('auto-formula').onchange=()=>{book.autoFormula=$('auto-formula').checked;scheduleSave()};$('answer-label').onchange=()=>{book.answerLabel=$('answer-label').value;scheduleSave()};$('color-print').onchange=()=>{document.body.classList.toggle('bw',!$('color-print').checked);localStorage.setItem('unb_color',$('color-print').checked)};
+ $('cover-enabled').onchange=()=>{book.coverPage.enabled=$('cover-enabled').checked;updateCoverState();scheduleSave()};[['academy','academyName'],['subtitle','subtitle'],['author','author'],['session','session']].forEach(([id,key])=>$(id).oninput=()=>{book.coverPage[key]=$(id).value;scheduleSave()});
+ $('logo').onchange=async()=>{if($('logo').files[0]){book.watermarkImage=await compressImage($('logo').files[0]);scheduleSave()}};$('remove-logo').onclick=()=>{book.watermarkImage='';$('logo').value='';scheduleSave()};
+ $('chapter-select').onchange=()=>{chapterIndex=Number($('chapter-select').value);$('chapter-title').value=book.chapters[chapterIndex].title;renderCategories();updateToolbar()};$('chapter-title').oninput=()=>{book.chapters[chapterIndex].title=$('chapter-title').value;renderChapterControls();scheduleSave(true,book.chapters[chapterIndex].id)};
+ $('add-chapter').onclick=()=>{const ch=newChapter(`نیا باب ${book.chapters.length+1}`);book.chapters.push(ch);selectedIds.add(ch.id);chapterIndex=book.chapters.length-1;scheduleSave();syncUI()};$('clear-chapter').onclick=()=>{if(confirm('اس چیپٹر کا تمام مواد حذف کر دیں؟')){book.chapters[chapterIndex].categories=[];scheduleSave();renderCategories()}};$('delete-chapter').onclick=()=>{if(book.chapters.length===1)return alert('کم از کم ایک چیپٹر ضروری ہے');if(confirm('پورا چیپٹر حذف کر دیں؟')){selectedIds.delete(book.chapters[chapterIndex].id);book.chapters.splice(chapterIndex,1);chapterIndex=Math.max(0,chapterIndex-1);scheduleSave();syncUI()}};
+ $('add-category').onclick=()=>{book.chapters[chapterIndex].categories.push({title:'نئی کیٹیگری',isCollapsed:false,questions:[{q:'',a:'',img:''}]});scheduleSave();renderCategories()};
+ $('export').onclick=()=>{const blob=new Blob([JSON.stringify(book,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${book.bookTitle||'Book'}.notes`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('import').onchange=async()=>{
+  const files=[...($('import').files||[])];$('import').value='';
+  if(!files.length)return;
+  try{
+   const notesFile=files.find(f=>/\.(notes|json)$/i.test(f.name));
+   if(notesFile){
+    // a .notes file REPLACES the whole current book — ask first.
+    if(!confirm('اس فائل سے موجودہ کتاب بدل جائے گی اور موجودہ مواد ختم ہو جائے گا۔ جاری رکھیں؟'))return;
+    alert(await importFile(notesFile));return;
+   }
+   // CSV/TXT: parse everything up front, show a preview, and
+   // only write after confirmation. Several files at once each
+   // become their own chapter (v8 import package).
+   const staged=[];
+   for(const f of files){
+    const text=(await f.text()).replace(/^\uFEFF/,'');
+    const g=csvGroups(text);
+    if(!g.groups.size)throw new Error(`${f.name} میں درست ڈیٹا نہیں ملا`);
+    staged.push({file:f,...g,math:/\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/.test(text)});
+   }
+   const multi=staged.length>1;
+   const lines=staged.map(st=>modalLine(`${st.file.name} — ${st.groups.size} کیٹیگریاں، ${st.total} سوال`+(st.emptyAnswers?`، ⚠️ ${st.emptyAnswers} جواب خالی`:'')));
+   lines.push(modalLine(multi?'ہر فائل ایک نیا چیپٹر بنے گی۔':'یہ سوال موجودہ چیپٹر میں شامل ہوں گے۔'));
+   showModal('درآمد سے پہلے جائزہ',lines,[
+    {label:'✓ شامل کریں',cls:'green',fn:async()=>{
+     closeModal();
+     let added=0,skipped=0,empty=0;
+     for(const st of staged){
+      empty+=st.emptyAnswers;
+      if(st.math)book.mathJax=true;
+      let ch;
+      if(multi){
+       ch=newChapter(st.file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim()||'نیا چیپٹر');
+       book.chapters.push(ch);selectedIds.add(ch.id);
+      }else ch=book.chapters[chapterIndex];
+      const r=mergeIntoChapter(ch,st.groups);added+=r.added;skipped+=r.skipped;
+     }
+     if(multi)chapterIndex=book.chapters.length-1;
+     await saveNow();syncUI();scheduleRender();
+     const report=[modalLine(`نئے سوال شامل: ${added}`)];
+     if(skipped)report.push(modalLine(`duplicate چھوڑ دیے گئے: ${skipped}`));
+     if(empty)report.push(modalLine(`⚠️ جواب خالی سوال: ${empty} — اوپر ⚠️ مسائل والے بٹن میں ان کی فہرست ملے گی`));
+     report.push(modalLine(`کتاب میں کل چیپٹر: ${book.chapters.length}`));
+     showModal('درآمد مکمل',report,[{label:'ٹھیک ہے',cls:'blue',fn:closeModal}]);
+    }},
+    {label:'منسوخ',cls:'gray',fn:closeModal}
+   ]);
+  }catch(e){alert('فائل لوڈ نہیں ہوئی: '+e.message)}
+ };
+ $('reset').onclick=async()=>{if(confirm('پوری کتاب حذف کر کے نئی کتاب بنائیں؟')){book=freshBook();chapterIndex=0;selectedIds=new Set(book.chapters.map(ch=>ch.id));await saveNow();syncUI();scheduleRender()}};
+ $('worksheet').onchange=()=>{$('preview-wrapper').classList.toggle('worksheet',$('worksheet').checked)};$('open-settings').onclick=()=>$('toolbar').classList.add('active');$('close-settings').onclick=()=>$('toolbar').classList.remove('active');
+ document.querySelectorAll('[data-adjust]').forEach(b=>b.onclick=()=>{const s=book.chapters[chapterIndex].settings,k=b.dataset.adjust,d=Number(b.dataset.delta),limits={scale:[.6,1.8],qSize:[12,32],qWeight:[400,900],mathScale:[.5,1.5],lh:[.8,2.5],margin:[.5,2],latinScale:[.6,1.1]};s[k]=Math.max(limits[k][0],Math.min(limits[k][1],Number(s[k])+d));scheduleSave(true,book.chapters[chapterIndex].id);updateToolbar()});['columns','layout'].forEach(id=>$(id).onchange=()=>{book.chapters[chapterIndex].settings[id]=$(id).value;scheduleSave(true,book.chapters[chapterIndex].id);updateToolbar()});
+ $('paper').onchange=()=>{applyPaper($('paper').value);localStorage.setItem('unb_paper',$('paper').value);scheduleRender()};$('border').onchange=()=>{document.documentElement.style.setProperty('--page-border',$('border').value);localStorage.setItem('unb_border',$('border').value)};$('running-header').onchange=()=>{localStorage.setItem('unb_running',$('running-header').checked);scheduleRender()};
+ $('print').onclick=()=>{
+  if(!selectedIds.size)return alert('کم از کم ایک چیپٹر منتخب کریں');
+  if(isRendering)return alert('صفحات مکمل ہونے کا انتظار کریں');
+  const pages=[...$('preview-wrapper').querySelectorAll('.page:not(.cover)')];
+  if(!pages.length)return alert('پریویو میں کوئی صفحہ نہیں');
+  const total=pages.length;
+  const info=modalLine(`کل صفحات: ${total} · پیپر: ${$('paper').selectedOptions[0].textContent} · ${$('color-print').checked?'رنگین':'سیاہ و سفید'}`);
+  const row=document.createElement('div');row.className='row';row.style.gap='8px';row.style.marginTop='10px';row.style.alignItems='center';
+  const from=document.createElement('input');from.type='number';from.min=1;from.max=total;from.value=1;
+  const to=document.createElement('input');to.type='number';to.min=1;to.max=total;to.value=total;
+  row.append(document.createTextNode('صفحات:'),from,document.createTextNode('سے'),to,document.createTextNode('تک'));
+  showModal('🖨️ پرنٹ',[info,row],[
+   {label:'🖨️ پرنٹ کریں',cls:'green',fn:()=>{
+    const f=Math.max(1,Math.min(total,Number(from.value)||1)),t=Math.max(f,Math.min(total,Number(to.value)||total));
+    pages.forEach((p,i)=>p.classList.toggle('no-print',i+1<f||i+1>t));
+    closeModal();$('toolbar').classList.remove('active');
+    const w=$('preview-wrapper');w.style.transform='none';w.style.marginBottom='0';
+    setTimeout(()=>{print();pages.forEach(p=>p.classList.remove('no-print'));scalePreview()},80);
+   }},
+   {label:'منسوخ',cls:'gray',fn:closeModal}
+  ]);
+ };
+ $('dark-toggle').onchange=()=>{document.body.classList.toggle('dark',$('dark-toggle').checked);localStorage.setItem('unb_dark',$('dark-toggle').checked)};document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.body.className=document.body.className.replace(/tab-(editor|preview)/,'').trim()+` tab-${b.dataset.tab}`;if(b.dataset.tab==='preview')scheduleRender()});addEventListener('resize',scalePreview);$('MathJax-script').addEventListener('load',()=>{if(book.mathJax)scheduleRender()});$('MathJax-script').addEventListener('error',()=>mathjaxWarn());
+ $('modal-close').onclick=closeModal;$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
+ $('problems-btn').onclick=()=>{
+  if(!lastProblems.length)return;
+  showModal('⚠️ مسائل',lastProblems.map(p=>{
+   const d=modalLine(p.text);
+   if(p.el){d.classList.add('prob-line');d.onclick=()=>{closeModal();p.el.scrollIntoView({behavior:'smooth',block:'start'})}}
+   return d;
+  }),[{label:'بند کریں',cls:'gray',fn:closeModal}]);
+ };
+ $('nav-prev').onclick=()=>gotoPage(-1);$('nav-next').onclick=()=>gotoPage(1);
+ $('zoom-in').onclick=()=>{userZoom=Math.min(2,Math.round((userZoom+.1)*10)/10);localStorage.setItem('unb_zoom',userZoom);scalePreview()};
+ $('zoom-out').onclick=()=>{userZoom=Math.max(.5,Math.round((userZoom-.1)*10)/10);localStorage.setItem('unb_zoom',userZoom);scalePreview()};
+ let scrollTick=false;
+ $('preview-scroll').addEventListener('scroll',()=>{if(scrollTick)return;scrollTick=true;requestAnimationFrame(()=>{scrollTick=false;const sc=$('preview-scroll');const pages=[...$('preview-wrapper').querySelectorAll('.page')];let idx=0;pages.forEach((p,i)=>{if(p.offsetTop<=sc.scrollTop+80)idx=i});if(idx!==curPageIdx){curPageIdx=idx;document.querySelectorAll('#nav-chips .chip').forEach((c,i)=>c.classList.toggle('cur',i===idx))}})})
+}
+async function init(){try{const saved=await dbGet();if(saved)book=normalize(saved)}catch(e){console.warn('IndexedDB unavailable:',e)}book.chapters.forEach(ch=>ch.categories.forEach(c=>c.isCollapsed=true));selectedIds=new Set(book.chapters.map(ch=>ch.id));chapterIndex=0;bind();const dark=localStorage.getItem('unb_dark')==='true';$('dark-toggle').checked=dark;document.body.classList.toggle('dark',dark);
+ // v7: paper size, border, running header and colour-print are
+ // remembered across restarts (they used to reset silently).
+ const savedPaper=localStorage.getItem('unb_paper');if(savedPaper&&[...$('paper').options].some(o=>o.value===savedPaper)){$('paper').value=savedPaper;applyPaper(savedPaper)}
+ const savedBorder=localStorage.getItem('unb_border');if(savedBorder){$('border').value=savedBorder;document.documentElement.style.setProperty('--page-border',savedBorder)}
+ const savedRunning=localStorage.getItem('unb_running');if(savedRunning!==null)$('running-header').checked=savedRunning==='true';
+ const savedColor=localStorage.getItem('unb_color');if(savedColor!==null){$('color-print').checked=savedColor==='true';document.body.classList.toggle('bw',savedColor!=='true')}
+ syncUI();scheduleRender();setTimeout(()=>{if(book.mathJax&&!window.MathJax?.typesetPromise)mathjaxWarn()},6000)}
+init().finally(()=>{const boot=$('boot');boot.style.opacity='0';setTimeout(()=>boot.remove(),260)});
+</script>
+</body>
+</html>
